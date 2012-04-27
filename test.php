@@ -7,3 +7,4 @@ require_once 'DrSlump/Protobuf.php';
 require_once 'autoload.php';
 
 $replay = new Replay('8150165.dem');
+$replay->parse();

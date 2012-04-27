@@ -2,6 +2,8 @@
 
 namespace D2E\Dota2ReplayParser;
 
+use D2E\Dota2ReplayParser\IO\StringInputStream;
+
 use D2E\Dota2ReplayParser\IO\FileInputStream;
 use D2E\Dota2ReplayParser\IO\LittleEndianStreamReader;
 
@@ -90,9 +92,118 @@ class Replay
         		continue;
         	}
 
-        	echo "[$type] size: $size, compressed: $compressed\n";
-
         	$object = $this->codec->decode(new $type, $bytes);
+        	$object = $this->parseObject($object);
         }
+    }
+
+    private function parseObject($object)
+    {
+        $class = get_class($object);
+
+        switch ($class) {
+            case 'CDemoPacket':
+                return $this->parseDemoPacket($object);
+                break;
+            case 'CDemoFullPacket':
+                return $this->parseDemoPacket($object, true);
+                break;
+            case 'CDemoStringTables':
+                return $this->parseStringTables($object);
+                break;
+            case 'CSVCMsg_UserMessage':
+                return $this->parseUserMessage($object);
+                break;
+            case 'CSVCMsg_GameEvent':
+                return $this->parseGameEvent($object);
+                break;
+            case 'CSVCMsg_GameEventList':
+                return $this->parseGameEventList($object);
+                break;
+            case 'CSVCMsg_CreateStringTable':
+                return $this->parseCreateStringTable($object);
+                break;
+            case 'CSVCMsg_UpdateStringTable':
+                return $this->parseUpdateStringTable($object);
+                break;
+            default:
+                return $object;
+                break;
+        }
+    }
+
+    private function parseDemoPacket($object, $full = false)
+    {
+        if ($full) {
+            $data = $object->getPacket()->getData();
+        } else {
+            $data = $object->getData();
+        }
+
+        $streamReader = new LittleEndianStreamReader(new StringInputStream($data));
+
+        while ($streamReader->available()) {
+            $cmd = $streamReader->readInt32D2();
+
+            $refls = new \ReflectionClass('NET_Messages');
+            $messagesNet = $refls->getConstants();
+
+            $refls = new \ReflectionClass('SVC_Messages');
+            $messagesSvc = $refls->getConstants();
+
+            $find = false;
+
+            if (in_array($cmd, $messagesNet)) {
+                $type = array_search($cmd, $messagesNet);
+                $type = preg_replace("/net_(.*)/", "CNETMsg_$1", $type);
+            } elseif (in_array($cmd, $messagesSvc)) {
+                $type = array_search($cmd, $messagesNet);
+                $type = preg_replace("/svc_(.*)/", "CSVCMsg_$1", $type);
+            } else {
+                throw new \RuntimeException(sprintf("Invalid message type %s", $cmd));
+            }
+
+            $size = $this->streamReader->readInt32D2();
+            $bytes = $this->streamReader->readString($size);
+
+            if ($type == "CDemoSignonPacket") {
+                continue;
+            }
+
+            echo "[$type] size: $size \n";
+
+            $object = $this->codec->decode(new $type, $bytes);
+        	$object = $this->parseObject($object);
+        }
+    }
+
+    private function parseStringTables($object)
+    {
+        return $object;
+    }
+
+    private function parseUserMessage($object)
+    {
+        return $object;
+    }
+
+    private function parseGameEvent($object)
+    {
+        return $object;
+    }
+
+    private function parseGameEventList($object)
+    {
+        return $object;
+    }
+
+    private function parseCreateStringTable($object)
+    {
+        return $object;
+    }
+
+    private function parseUpdateStringTable($object)
+    {
+        return $object;
     }
 }
