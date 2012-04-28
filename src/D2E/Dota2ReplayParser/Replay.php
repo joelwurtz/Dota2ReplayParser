@@ -15,8 +15,9 @@ class Replay
     private $codec;
     private $eventlist = array();
     private $skipFullPacket = false;
+    private $skipPacket = false;
 
-    public function __construct($filename, $skipFullPacket = false, $build = "build1")
+    public function __construct($filename, $skipFullPacket = false, $skipPacket = false, $build = "build1")
     {
         if (!file_exists($filename)) {
             throw new \RuntimeException(sprintf("File %s does not exist", $filename));
@@ -27,6 +28,7 @@ class Replay
         $this->streamReader = new LittleEndianStreamReader(new FileInputStream($filename));
         $this->codec = new \DrSlump\Protobuf\Codec\Binary();
         $this->skipFullPacket = $skipFullPacket;
+        $this->skipPacket = $skipPacket;
 
         $header = $this->streamReader->readString(8);
 
@@ -117,7 +119,9 @@ class Replay
 
         switch ($class) {
             case 'CDemoPacket':
-                return $this->parseDemoPacket($object, $tick);
+                if (!$this->skipPacket) {
+                    return $this->parseDemoPacket($object, $tick);
+                }
                 break;
             case 'CDemoFullPacket':
                 if (!$this->skipFullPacket) {
