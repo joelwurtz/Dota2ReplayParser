@@ -144,6 +144,12 @@ class Replay
         $this->trackedClass[$class] = $closure;
     }
 
+    /**
+     * Get game event description given a event id
+     *
+     * @param integer $eventId Event identificator
+     * @return \CSVCMsg_GameEventList\descriptor_t|NULL Description of event or null if none found
+     */
     public function getGameEventDescriptor($eventId)
     {
         if (isset($this->eventlist[$eventId])) {
@@ -151,6 +157,57 @@ class Replay
         }
 
         return null;
+    }
+
+    /**
+     * Parse a game event to a readeable array
+     *
+     * @param \CSVCMsg_GameEvent $gameEvent
+     *
+     * @return array
+     */
+    public function getGameEvent(\CSVCMsg_GameEvent $gameEvent)
+    {
+        $descriptor = $this->getGameEventDescriptor($gameEvent->getEventId());
+
+        if ($descriptor == null) {
+            return array();
+        }
+
+        $event = array(
+            'name' => $descriptor->getName(),
+            'parameters' => array()
+        );
+
+        foreach ($gameEvent->getKeysList() as $id => $key) {
+            $keyType = $desciptor->getKeys($id);
+
+            switch ($keyType->getType()) {
+            case 1:
+                $event['parameters'][$keyType->getName()] = $key->getValString();
+                break;
+            case 2:
+                $event['parameters'][$keyType->getName()] = $key->getValFloat();
+                break;
+            case 3:
+                $event['parameters'][$keyType->getName()] = $key->getValLong();
+                break;
+            case 4:
+                $event['parameters'][$keyType->getName()] = $key->getValShort();
+                break;
+            case 5:
+                $event['parameters'][$keyType->getName()] = $key->getValByte();
+                break;
+            case 6:
+                $event['parameters'][$keyType->getName()] = $key->getValBool();
+                break;
+            case 7:
+                $event['parameters'][$keyType->getName()] = $key->getValUint64();
+                break;
+            }
+        }
+
+        return $event;
     }
 
     /**
