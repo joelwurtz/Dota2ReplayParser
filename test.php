@@ -6,7 +6,7 @@ require_once 'DrSlump/Protobuf.php';
 \DrSlump\Protobuf::autoload();
 require_once 'autoload.php';
 
-$replay = new Replay('12930689.dem');
+$replay = new Replay('12930689.dem', true);
 
 $replay->track('CDOTAUserMsg_ChatEvent', function (CDOTAUserMsg_ChatEvent $chatEvent) {
     echo $chatEvent->getType()."\n";

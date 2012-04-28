@@ -14,8 +14,9 @@ class Replay
     private $streamReader;
     private $codec;
     private $eventlist = array();
+    private $skipFullPacket = false;
 
-    public function __construct($filename, $build = "build1")
+    public function __construct($filename, $skipFullPacket = false, $build = "build1")
     {
         if (!file_exists($filename)) {
             throw new \RuntimeException(sprintf("File %s does not exist", $filename));
@@ -25,6 +26,7 @@ class Replay
 
         $this->streamReader = new LittleEndianStreamReader(new FileInputStream($filename));
         $this->codec = new \DrSlump\Protobuf\Codec\Binary();
+        $this->skipFullPacket = $skipFullPacket;
 
         $header = $this->streamReader->readString(8);
 
@@ -118,7 +120,9 @@ class Replay
                 return $this->parseDemoPacket($object);
                 break;
             case 'CDemoFullPacket':
-                return $this->parseDemoPacket($object, true);
+                if (!$this->skipFullPacket) {
+                    return $this->parseDemoPacket($object, true);
+                }
                 break;
             case 'CSVCMsg_UserMessage':
                 return $this->parseUserMessage($object);
