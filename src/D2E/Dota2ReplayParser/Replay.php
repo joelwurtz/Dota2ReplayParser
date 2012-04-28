@@ -166,12 +166,16 @@ class Replay
      *
      * @return array
      */
-    public function getGameEvent(\CSVCMsg_GameEvent $gameEvent)
+    public function getGameEvent(\CSVCMsg_GameEvent $gameEvent, $filterName = null)
     {
         $descriptor = $this->getGameEventDescriptor($gameEvent->getEventId());
 
         if ($descriptor == null) {
-            return array();
+            return null;
+        }
+
+        if ($filterName != null && $filterName != $descriptor->getName()) {
+            return null;
         }
 
         $event = array(
