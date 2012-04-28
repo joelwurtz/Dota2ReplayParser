@@ -158,7 +158,7 @@ class Replay
                 $type = array_search($cmd, $messagesNet);
                 $type = preg_replace("/net_(.*)/", "CNETMsg_$1", $type);
             } elseif (in_array($cmd, $messagesSvc)) {
-                $type = array_search($cmd, $messagesNet);
+                $type = array_search($cmd, $messagesSvc);
                 $type = preg_replace("/svc_(.*)/", "CSVCMsg_$1", $type);
             } else {
                 throw new \RuntimeException(sprintf("Invalid message type %s", $cmd));
