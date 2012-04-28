@@ -136,6 +136,10 @@ class Replay
     private function parseDemoPacket($object, $full = false)
     {
         if ($full) {
+            if ($object->getPacket() == null) {
+                return null;
+            }
+
             $data = $object->getPacket()->getData();
         } else {
             $data = $object->getData();
