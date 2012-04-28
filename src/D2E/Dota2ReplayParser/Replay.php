@@ -13,6 +13,7 @@ class Replay
 
     private $streamReader;
     private $codec;
+    private $eventlist = array();
 
     public function __construct($filename, $build = "build1")
     {
@@ -209,12 +210,27 @@ class Replay
 
     private function parseGameEvent($object)
     {
-        return $object;
+        if (isset($this->evenlist[$object->getEventId()])) {
+            $descriptor = $this->evenlist[$object->getEventId()];
+            $gameevent = array(
+                'name' => $descriptor->getName(),
+                'keys' => array()
+            );
+
+            foreach ($object->getKeysList() as $id => $key) {
+                $key_type = $descriptor->getKeys($id);
+                $gameevent[$key_type->getName()] = $key;
+            }
+
+            print_r($gameevent);
+        }
     }
 
     private function parseGameEventList($object)
     {
-        return $object;
+        foreach ($object->getDescriptors() as $descriptor) {
+            $this->eventlist[$descriptor->getEventId()] = $descriptor;
+        }
     }
 
     private function parseCreateStringTable($object)
