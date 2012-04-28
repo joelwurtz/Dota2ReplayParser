@@ -141,6 +141,10 @@ class Replay
                 return null;
             }
 
+            if ($object->getStringTable() != null) {
+                $this->parseStringTables($object->getStringTable());
+            }
+
             $data = $object->getPacket()->getData();
         } else {
             $data = $object->getData();
@@ -179,6 +183,10 @@ class Replay
 
     private function parseStringTables($object)
     {
+        foreach ($object->getTablesList() as $table) {
+            echo $table->getName()."\n";
+        }
+
         return $object;
     }
 
@@ -221,8 +229,6 @@ class Replay
                 $key_type = $descriptor->getKeys($id);
                 $gameevent[$key_type->getName()] = $key;
             }
-
-            print_r($gameevent);
         }
     }
 
