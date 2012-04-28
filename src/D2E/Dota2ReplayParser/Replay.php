@@ -91,7 +91,7 @@ class Replay
         	if ($type == "CDemoSignonPacket") {
         		continue;
         	}
-            echo "[$type] size: $size cmd : $cmd \n";
+            //echo "[$type] size: $size cmd : $cmd \n";
 
         	$object = $this->codec->decode(new $type, $bytes);
         	$object = $this->parseObject($object);
@@ -156,8 +156,6 @@ class Replay
             $refls = new \ReflectionClass('SVC_Messages');
             $messagesSvc = $refls->getConstants();
 
-            $find = false;
-
             if (in_array($cmd, $messagesNet)) {
                 $type = array_search($cmd, $messagesNet);
                 $type = preg_replace("/net_(.*)/", "CNETMsg_$1", $type);
@@ -171,7 +169,7 @@ class Replay
             $size = $streamReader->readInt32D2();
             $bytes = $streamReader->readString($size);
 
-            echo "[$type] size: $size cmd : $cmd \n";
+            //echo "[$type] size: $size cmd : $cmd \n";
 
             $object = $this->codec->decode(new $type, $bytes);
         	$object = $this->parseObject($object);
@@ -185,7 +183,28 @@ class Replay
 
     private function parseUserMessage($object)
     {
-        return $object;
+        $cmd = $object->getMsgType();
+
+        $refls = new \ReflectionClass('EBaseUserMessages');
+        $messagesUser = $refls->getConstants();
+
+        $refls = new \ReflectionClass('EDotaUserMessages');
+        $messagesDotaUser = $refls->getConstants();
+
+        if (in_array($cmd, $messagesUser)) {
+            $type = array_search($cmd, $messagesUser);
+            $type = preg_replace("/UM_(.*)/", "CUserMsg_$1", $type);
+        } elseif (in_array($cmd, $messagesDotaUser)) {
+            $type = array_search($cmd, $messagesDotaUser);
+            $type = preg_replace("/DOTA_UM_(.*)/", "CDOTAUserMsg_$1", $type);
+        } else {
+            throw new \RuntimeException(sprintf("Invalid message type %s", $cmd));
+        }
+
+        echo "[$type] cmd : $cmd \n";
+
+        $object = $this->codec->decode(new $type, $object->getMsgData());
+        $object = $this->parseObject($object);
     }
 
     private function parseGameEvent($object)
