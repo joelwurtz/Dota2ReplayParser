@@ -99,9 +99,18 @@ class Replay
         }
     }
 
+    public function track($trackedClass = array())
+    {
+        $this->trackedClass = $trackedClass;
+    }
+
     private function parseObject($object)
     {
         $class = get_class($object);
+
+        if (in_array($class, $this->trackedClass)) {
+            print_r($object);
+        }
 
         switch ($class) {
             case 'CDemoPacket':
