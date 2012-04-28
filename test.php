@@ -6,5 +6,5 @@ require_once 'DrSlump/Protobuf.php';
 \DrSlump\Protobuf::autoload();
 require_once 'autoload.php';
 
-$replay = new Replay('8150165.dem');
+$replay = new Replay('12930689.dem');
 $replay->parse();

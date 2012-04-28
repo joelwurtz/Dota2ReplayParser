@@ -91,6 +91,7 @@ class Replay
         	if ($type == "CDemoSignonPacket") {
         		continue;
         	}
+            echo "[$type] size: $size cmd : $cmd \n";
 
         	$object = $this->codec->decode(new $type, $bytes);
         	$object = $this->parseObject($object);
@@ -166,11 +167,7 @@ class Replay
             $size = $this->streamReader->readInt32D2();
             $bytes = $this->streamReader->readString($size);
 
-            if ($type == "CDemoSignonPacket") {
-                continue;
-            }
-
-            echo "[$type] size: $size \n";
+            echo "[$type] size: $size cmd : $cmd \n";
 
             $object = $this->codec->decode(new $type, $bytes);
         	$object = $this->parseObject($object);
