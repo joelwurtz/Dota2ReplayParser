@@ -164,8 +164,8 @@ class Replay
                 throw new \RuntimeException(sprintf("Invalid message type %s", $cmd));
             }
 
-            $size = $this->streamReader->readInt32D2();
-            $bytes = $this->streamReader->readString($size);
+            $size = $streamReader->readInt32D2();
+            $bytes = $streamReader->readString($size);
 
             echo "[$type] size: $size cmd : $cmd \n";
 
