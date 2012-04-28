@@ -1,12 +1,17 @@
 <?php
-
 namespace D2E\Dota2ReplayParser;
 
 use D2E\Dota2ReplayParser\IO\StringInputStream;
-
 use D2E\Dota2ReplayParser\IO\FileInputStream;
 use D2E\Dota2ReplayParser\IO\LittleEndianStreamReader;
 
+/**
+ * Replay class
+ *
+ * Use this class to parse a dota2 Replay
+ *
+ * @author Joel Wurtz <brouznouf@gmail.com>
+ */
 class Replay
 {
     private static $protoBuildInit = array();
@@ -16,7 +21,22 @@ class Replay
     private $eventlist = array();
     private $skipFullPacket = false;
     private $skipPacket = false;
+    private $mappingGlobal = array();
+    private $mappingMessages = array();
+    private $mappingPacket = array();
 
+    /**
+     * Constructor
+     *
+     * Check if replay exists and process init process
+     *
+     * @param string  $filename         Replay file path
+     * @param boolean $skipFullPacket   Skip parsing of full packet (optimisation trick when not interessed in what is inside)
+     * @param boolean $skipPacket       Skip parsing of packet (optimisation trick when not interessed in what is inside)
+     * @param string  $build            Build name to handle multiple version of proto files leave it by default to have last version
+     *
+     * @throws \RuntimeException
+     */
     public function __construct($filename, $skipFullPacket = false, $skipPacket = false, $build = "build1")
     {
         if (!file_exists($filename)) {
@@ -38,8 +58,16 @@ class Replay
 
         //Skip offset
         $this->streamReader->readInt32();
+
+        //Build mapping
+        $this->buildMapping();
     }
 
+    /**
+     * Include proto lib class
+     *
+     * @param unknown_type $build
+     */
     public static function loadProtoLib($build = "build1")
     {
         if (!isset($protoBuildInit[$build])) {
@@ -57,11 +85,11 @@ class Replay
         }
     }
 
-    public function getMessageOfType($type)
-    {
-
-    }
-
+    /**
+     * Beginning parsing of replay file
+     *
+     * @throws \RuntimeException
+     */
     public function parse()
     {
         $continue = true;
@@ -76,15 +104,11 @@ class Replay
         		$cmd = $cmd & ~\EDemoCommands::DEM_IsCompressed;
         	}
 
-        	$refls = new \ReflectionClass('EDemoCommands');
-        	$messages = $refls->getConstants();
-
-        	if (!in_array($cmd, $messages)) {
+        	if (!isset($this->mappingGlobal[$cmd])) {
         		throw new \RuntimeException(sprintf("Invalid message type %s", $cmd));
         	}
 
-        	$type = array_search($cmd, $messages);
-        	$type = preg_replace("/DEM_(.*)/", "CDemo$1", $type);
+        	$type = $this->mappingGlobal[$cmd];
 
         	$size = $this->streamReader->readInt32D2();
         	$bytes = $this->streamReader->readString($size);
@@ -103,11 +127,29 @@ class Replay
         }
     }
 
+    /**
+     * Add a class to track
+     *
+     * You can use this function to execute specific code when parser encountering a special class, closure function must respect the following schema :
+     *
+     * function($object, $tick)
+     *
+     * Where $object is the $object for which we found the corresponding tracked class and $tick is the current time information
+     *
+     * @param string   $class    Class to track
+     * @param \Closure $closure  Callback function to execute
+     */
     public function track($class, $closure)
     {
         $this->trackedClass[$class] = $closure;
     }
 
+    /**
+     * Parse an object and decide to continue deeper given configuration and object class
+     *
+     * @param \DrSlump\Protobuf\Message $object Object parsed from protobuf
+     * @param int $tick Tick counter (30 tick per second)
+     */
     private function parseObject($object, $tick)
     {
         $class = get_class($object);
@@ -143,6 +185,14 @@ class Replay
         }
     }
 
+    /**
+     * Parsing a demo packet which contains data
+     *
+     * @param \DrSlump\Protobuf\Message $object     Object to parse
+     * @param int                       $tick       Current tick time
+     * @param boolean                   $full       Is it a FullPacket or a Packet
+     * @throws \RuntimeException
+     */
     private function parseDemoPacket($object, $tick, $full = false)
     {
         if ($full) {
@@ -164,21 +214,11 @@ class Replay
         while ($streamReader->available()) {
             $cmd = $streamReader->readInt32D2();
 
-            $refls = new \ReflectionClass('NET_Messages');
-            $messagesNet = $refls->getConstants();
+            if (!isset($this->mappingPacket[$cmd])) {
+        		throw new \RuntimeException(sprintf("Invalid message type %s", $cmd));
+        	}
 
-            $refls = new \ReflectionClass('SVC_Messages');
-            $messagesSvc = $refls->getConstants();
-
-            if (in_array($cmd, $messagesNet)) {
-                $type = array_search($cmd, $messagesNet);
-                $type = preg_replace("/net_(.*)/", "CNETMsg_$1", $type);
-            } elseif (in_array($cmd, $messagesSvc)) {
-                $type = array_search($cmd, $messagesSvc);
-                $type = preg_replace("/svc_(.*)/", "CSVCMsg_$1", $type);
-            } else {
-                throw new \RuntimeException(sprintf("Invalid message type %s", $cmd));
-            }
+        	$type = $this->mappingPacket[$cmd];
 
             $size = $streamReader->readInt32D2();
             $bytes = $streamReader->readString($size);
@@ -188,30 +228,32 @@ class Replay
         }
     }
 
+    /**
+     * Parse user message object
+     *
+     * @param CSVCMsg_UserMessage $object
+     * @param integer             $tick
+     * @throws \RuntimeException
+     */
     private function parseUserMessage($object, $tick)
     {
         $cmd = $object->getMsgType();
 
-        $refls = new \ReflectionClass('EBaseUserMessages');
-        $messagesUser = $refls->getConstants();
-
-        $refls = new \ReflectionClass('EDotaUserMessages');
-        $messagesDotaUser = $refls->getConstants();
-
-        if (in_array($cmd, $messagesUser)) {
-            $type = array_search($cmd, $messagesUser);
-            $type = preg_replace("/UM_(.*)/", "CUserMsg_$1", $type);
-        } elseif (in_array($cmd, $messagesDotaUser)) {
-            $type = array_search($cmd, $messagesDotaUser);
-            $type = preg_replace("/DOTA_UM_(.*)/", "CDOTAUserMsg_$1", $type);
-        } else {
-            throw new \RuntimeException(sprintf("Invalid message type %s", $cmd));
+        if (!isset($this->mappingMessages[$cmd])) {
+        	throw new \RuntimeException(sprintf("Invalid message type %s", $cmd));
         }
+
+        $type = $this->mappingMessages[$cmd];
 
         $object = $this->codec->decode(new $type, $object->getMsgData());
         $object = $this->parseObject($object, $tick);
     }
 
+    /**
+     * Parse game event
+     *
+     * @param CSVCMsg_GameEvent $object
+     */
     private function parseGameEvent($object)
     {
         if (isset($this->evenlist[$object->getEventId()])) {
@@ -228,10 +270,68 @@ class Replay
         }
     }
 
+    /**
+     * Parse game event list
+     *
+     * @param CSVCMsg_GameEventList $object
+     */
     private function parseGameEventList($object)
     {
         foreach ($object->getDescriptorsList() as $descriptor) {
             $this->eventlist[$descriptor->getEventId()] = $descriptor;
+        }
+    }
+
+    /**
+     * Build mapping for optimization process to not recalculate it at each packet
+     *
+     * @throws \RuntimeException
+     */
+    private function buildMapping()
+    {
+        $this->mappingGlobal = array();
+
+        $refls = new \ReflectionClass('EDemoCommands');
+        $messages = $refls->getConstants();
+
+        if (!in_array($cmd, $messages)) {
+            throw new \RuntimeException(sprintf("Invalid message type %s", $cmd));
+        }
+
+        foreach ($messages as $type => $id) {
+            $this->mappingGlobal[$id] = preg_replace("/DEM_(.*)/", "CDemo$1", $type);
+        }
+
+        $this->mappingMessages = array();
+
+        $refls = new \ReflectionClass('EBaseUserMessages');
+        $messagesUser = $refls->getConstants();
+
+        $refls = new \ReflectionClass('EDotaUserMessages');
+        $messagesDotaUser = $refls->getConstants();
+
+        foreach ($messagesUser as $type => $id) {
+            $this->mappingMessages[$id] = preg_replace("/UM_(.*)/", "CUserMsg_$1", $type);
+        }
+
+        foreach ($messagesDotaUser as $type => $id) {
+            $this->mappingMessages[$id] = preg_replace("/DOTA_UM_(.*)/", "CDOTAUserMsg_$1", $type);
+        }
+
+        $this->mappingPacket = array();
+
+        $refls = new \ReflectionClass('NET_Messages');
+        $messagesNet = $refls->getConstants();
+
+        $refls = new \ReflectionClass('SVC_Messages');
+        $messagesSvc = $refls->getConstants();
+
+        foreach ($messagesNet as $type => $id) {
+            $this->mappingPacket[$id] = preg_replace("/net_(.*)/", "CNETMsg_$1", $type);
+        }
+
+        foreach ($messagesDotaUser as $type => $id) {
+            $this->mappingPacket[$id] = preg_replace("/svc_(.*)/", "CSVCMsg_$1", $type);
         }
     }
 }
