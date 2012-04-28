@@ -118,7 +118,7 @@ class Replay
         	}
 
         	if ($type == "CDemoSignonPacket") {
-        		continue;
+        		$type = "CDemoPacket";
         	}
             //echo "[$type] size: $size cmd : $cmd \n";
 
