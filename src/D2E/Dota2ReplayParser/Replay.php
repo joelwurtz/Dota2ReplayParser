@@ -120,9 +120,6 @@ class Replay
             case 'CDemoFullPacket':
                 return $this->parseDemoPacket($object, true);
                 break;
-            case 'CDemoStringTables':
-                return $this->parseStringTables($object);
-                break;
             case 'CSVCMsg_UserMessage':
                 return $this->parseUserMessage($object);
                 break;
@@ -131,12 +128,6 @@ class Replay
                 break;
             case 'CSVCMsg_GameEventList':
                 return $this->parseGameEventList($object);
-                break;
-            case 'CSVCMsg_CreateStringTable':
-                return $this->parseCreateStringTable($object);
-                break;
-            case 'CSVCMsg_UpdateStringTable':
-                return $this->parseUpdateStringTable($object);
                 break;
             default:
                 return $object;
@@ -152,7 +143,7 @@ class Replay
             }
 
             if ($object->getStringTable() != null) {
-                $this->parseStringTables($object->getStringTable());
+                $this->parseObject($object->getStringTable());
             }
 
             $data = $object->getPacket()->getData();
@@ -184,20 +175,9 @@ class Replay
             $size = $streamReader->readInt32D2();
             $bytes = $streamReader->readString($size);
 
-            //echo "[$type] size: $size cmd : $cmd \n";
-
             $object = $this->codec->decode(new $type, $bytes);
         	$object = $this->parseObject($object);
         }
-    }
-
-    private function parseStringTables($object)
-    {
-        foreach ($object->getTablesList() as $table) {
-            echo $table->getTableName()."\n";
-        }
-
-        return $object;
     }
 
     private function parseUserMessage($object)
@@ -219,8 +199,6 @@ class Replay
         } else {
             throw new \RuntimeException(sprintf("Invalid message type %s", $cmd));
         }
-
-        //echo "[$type] cmd : $cmd \n";
 
         $object = $this->codec->decode(new $type, $object->getMsgData());
         $object = $this->parseObject($object);
@@ -247,15 +225,5 @@ class Replay
         foreach ($object->getDescriptorsList() as $descriptor) {
             $this->eventlist[$descriptor->getEventId()] = $descriptor;
         }
-    }
-
-    private function parseCreateStringTable($object)
-    {
-        return $object;
-    }
-
-    private function parseUpdateStringTable($object)
-    {
-        return $object;
     }
 }

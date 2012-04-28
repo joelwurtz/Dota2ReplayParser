@@ -9,7 +9,7 @@ require_once 'autoload.php';
 $replay = new Replay('12930689.dem');
 
 $replay->track('CDOTAUserMsg_ChatEvent', function (CDOTAUserMsg_ChatEvent $chatEvent) {
-    echo $chatEvent->getValue()."\n";
+    echo $chatEvent->getType()."\n";
 });
 
 $replay->parse();
