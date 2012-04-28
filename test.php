@@ -8,10 +8,11 @@ require_once 'autoload.php';
 
 $replay = new Replay('12930689.dem', true);
 
-$replay->track('CDOTAUserMsg_ChatEvent', function (CDOTAUserMsg_ChatEvent $chatEvent, $tick) {
-    $seconds = ($tick - ($tick % 30)) / 30;
-    $type = $chatEvent->getType();
-    echo "[$seconds] Chat message type $type\n";
+$replay->track('CSVCMsg_GameEvent', function  (CSVCMsg_GameEvent $gameEvent, $tick) use($replay) {
+    $descriptor = $replay->getGameEventDescriptor($event->getEventId());
+    if ($descriptor != null) {
+        echo "Event : ".$descriptor->getName()."\n";
+    }
 });
 
 $replay->parse();

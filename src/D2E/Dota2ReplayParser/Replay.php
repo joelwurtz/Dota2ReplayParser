@@ -144,6 +144,15 @@ class Replay
         $this->trackedClass[$class] = $closure;
     }
 
+    public function getGameEventDescriptor($eventId)
+    {
+        if (isset($this->eventlist[$eventId])) {
+            return $this->eventlist[$eventId];
+        }
+
+        return null;
+    }
+
     /**
      * Parse an object and decide to continue deeper given configuration and object class
      *
@@ -172,9 +181,6 @@ class Replay
                 break;
             case 'CSVCMsg_UserMessage':
                 return $this->parseUserMessage($object, $tick);
-                break;
-            case 'CSVCMsg_GameEvent':
-                return $this->parseGameEvent($object);
                 break;
             case 'CSVCMsg_GameEventList':
                 return $this->parseGameEventList($object);
@@ -247,27 +253,6 @@ class Replay
 
         $object = $this->codec->decode(new $type, $object->getMsgData());
         $object = $this->parseObject($object, $tick);
-    }
-
-    /**
-     * Parse game event
-     *
-     * @param CSVCMsg_GameEvent $object
-     */
-    private function parseGameEvent($object)
-    {
-        if (isset($this->evenlist[$object->getEventId()])) {
-            $descriptor = $this->evenlist[$object->getEventId()];
-            $gameevent = array(
-                'name' => $descriptor->getName(),
-                'keys' => array()
-            );
-
-            foreach ($object->getKeysList() as $id => $key) {
-                $key_type = $descriptor->getKeys($id);
-                $gameevent[$key_type->getName()] = $key;
-            }
-        }
     }
 
     /**
