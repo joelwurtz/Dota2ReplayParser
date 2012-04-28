@@ -61,6 +61,8 @@ class Replay
 
         //Build mapping
         $this->buildMapping();
+
+        $this->streamReader->mark("afterHeader");
     }
 
     /**
@@ -86,12 +88,58 @@ class Replay
     }
 
     /**
+     * Return file info
+     *
+     * @throws \RuntimeException
+     */
+    public function getFileInfo()
+    {
+        $this->streamReader->reset("afterHeader");
+        $continue = true;
+
+        while($continue && $this->streamReader->available()) {
+            $cmd = $this->streamReader->readInt32D2();
+            $tick = $this->streamReader->readInt32D2();
+            $compressed = false;
+
+            if ($cmd & \EDemoCommands::DEM_IsCompressed) {
+                $compressed = true;
+                $cmd = $cmd & ~\EDemoCommands::DEM_IsCompressed;
+            }
+
+            if (!isset($this->mappingGlobal[$cmd])) {
+                throw new \RuntimeException(sprintf("Invalid message type %s", $cmd));
+            }
+
+            $type = $this->mappingGlobal[$cmd];
+
+            $size = $this->streamReader->readInt32D2();
+            $bytes = $this->streamReader->readString($size);
+
+            if ($compressed) {
+                $bytes = snappy_uncompress($bytes);
+            }
+
+            if ($type == "CDemoSignonPacket") {
+                $type = "CDemoPacket";
+            }
+
+            if ($type == "CDemoFileInfo") {
+                return $this->codec->decode(new $type, $bytes);
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * Beginning parsing of replay file
      *
      * @throws \RuntimeException
      */
     public function parse()
     {
+        $this->streamReader->reset("afterHeader");
         $continue = true;
 
         while($continue && $this->streamReader->available()) {
