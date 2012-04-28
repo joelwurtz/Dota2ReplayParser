@@ -184,7 +184,7 @@ class Replay
     private function parseStringTables($object)
     {
         foreach ($object->getTablesList() as $table) {
-            echo $table->getName()."\n";
+            echo $table->getTableName()."\n";
         }
 
         return $object;
