@@ -202,7 +202,7 @@ class Replay
             throw new \RuntimeException(sprintf("Invalid message type %s", $cmd));
         }
 
-        echo "[$type] cmd : $cmd \n";
+        //echo "[$type] cmd : $cmd \n";
 
         $object = $this->codec->decode(new $type, $object->getMsgData());
         $object = $this->parseObject($object);
@@ -228,7 +228,7 @@ class Replay
 
     private function parseGameEventList($object)
     {
-        foreach ($object->getDescriptors() as $descriptor) {
+        foreach ($object->getDescriptorsList() as $descriptor) {
             $this->eventlist[$descriptor->getEventId()] = $descriptor;
         }
     }
