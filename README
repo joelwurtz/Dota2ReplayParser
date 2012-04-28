@@ -1,0 +1,13 @@
+Dota2 Replayr Parser in Php
+===========================
+
+Requirements
+============
+
+* Protobuf DrSlump library https://github.com/drslump/Protobuf-PHP
+* Snappy php api http://code.google.com/p/php-snappy/
+
+Usage
+=====
+
+Look at test.php for the moment clear installation and process will be available soon
