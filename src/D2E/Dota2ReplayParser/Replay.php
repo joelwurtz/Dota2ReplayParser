@@ -151,7 +151,7 @@ class Replay
             }
 
             if ($object->getStringTable() != null) {
-                $this->parseObject($object->getStringTable());
+                $this->parseObject($object->getStringTable(), true);
             }
 
             $data = $object->getPacket()->getData();
