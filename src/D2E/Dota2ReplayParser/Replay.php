@@ -294,10 +294,6 @@ class Replay
         $refls = new \ReflectionClass('EDemoCommands');
         $messages = $refls->getConstants();
 
-        if (!in_array($cmd, $messages)) {
-            throw new \RuntimeException(sprintf("Invalid message type %s", $cmd));
-        }
-
         foreach ($messages as $type => $id) {
             $this->mappingGlobal[$id] = preg_replace("/DEM_(.*)/", "CDemo$1", $type);
         }
@@ -330,7 +326,7 @@ class Replay
             $this->mappingPacket[$id] = preg_replace("/net_(.*)/", "CNETMsg_$1", $type);
         }
 
-        foreach ($messagesDotaUser as $type => $id) {
+        foreach ($messagesSvc as $type => $id) {
             $this->mappingPacket[$id] = preg_replace("/svc_(.*)/", "CSVCMsg_$1", $type);
         }
     }
