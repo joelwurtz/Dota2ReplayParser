@@ -97,7 +97,7 @@ class Replay
             //echo "[$type] size: $size cmd : $cmd \n";
 
         	$object = $this->codec->decode(new $type, $bytes);
-        	$object = $this->parseObject($object);
+        	$object = $this->parseObject($object, $tick);
         }
     }
 
@@ -106,26 +106,26 @@ class Replay
         $this->trackedClass[$class] = $closure;
     }
 
-    private function parseObject($object)
+    private function parseObject($object, $tick)
     {
         $class = get_class($object);
 
         if (isset($this->trackedClass[$class])) {
             $closure = $this->trackedClass[$class];
-            $closure($object);
+            $closure($object, $tick);
         }
 
         switch ($class) {
             case 'CDemoPacket':
-                return $this->parseDemoPacket($object);
+                return $this->parseDemoPacket($object, $tick);
                 break;
             case 'CDemoFullPacket':
                 if (!$this->skipFullPacket) {
-                    return $this->parseDemoPacket($object, true);
+                    return $this->parseDemoPacket($object, $tick, true);
                 }
                 break;
             case 'CSVCMsg_UserMessage':
-                return $this->parseUserMessage($object);
+                return $this->parseUserMessage($object, $tick);
                 break;
             case 'CSVCMsg_GameEvent':
                 return $this->parseGameEvent($object);
@@ -139,7 +139,7 @@ class Replay
         }
     }
 
-    private function parseDemoPacket($object, $full = false)
+    private function parseDemoPacket($object, $tick, $full = false)
     {
         if ($full) {
             if ($object->getPacket() == null) {
@@ -180,11 +180,11 @@ class Replay
             $bytes = $streamReader->readString($size);
 
             $object = $this->codec->decode(new $type, $bytes);
-        	$object = $this->parseObject($object);
+        	$object = $this->parseObject($object, $tick);
         }
     }
 
-    private function parseUserMessage($object)
+    private function parseUserMessage($object, $tick)
     {
         $cmd = $object->getMsgType();
 
@@ -205,7 +205,7 @@ class Replay
         }
 
         $object = $this->codec->decode(new $type, $object->getMsgData());
-        $object = $this->parseObject($object);
+        $object = $this->parseObject($object, $tick);
     }
 
     private function parseGameEvent($object)
