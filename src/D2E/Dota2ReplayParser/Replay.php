@@ -180,7 +180,7 @@ class Replay
         );
 
         foreach ($gameEvent->getKeysList() as $id => $key) {
-            $keyType = $desciptor->getKeys($id);
+            $keyType = $descriptor->getKeys($id);
 
             switch ($keyType->getType()) {
             case 1:
