@@ -7,5 +7,9 @@ require_once 'DrSlump/Protobuf.php';
 require_once 'autoload.php';
 
 $replay = new Replay('12930689.dem');
-$replay->track(array('CDOTAUserMsg_ChatEvent'));
+
+$replay->track('CDOTAUserMsg_ChatEvent', function (CDOTAUserMsg_ChatEvent $chatEvent) {
+    echo $chatEvent->getValue()."\n";
+});
+
 $replay->parse();

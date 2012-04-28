@@ -99,17 +99,18 @@ class Replay
         }
     }
 
-    public function track($trackedClass = array())
+    public function track($class, $closure)
     {
-        $this->trackedClass = $trackedClass;
+        $this->trackedClass[$class] = $closure;
     }
 
     private function parseObject($object)
     {
         $class = get_class($object);
 
-        if (in_array($class, $this->trackedClass)) {
-            print_r($object);
+        if (isset($this->trackedClass[$class])) {
+            $closure = $this->trackedClass[$class];
+            $closure($object);
         }
 
         switch ($class) {
