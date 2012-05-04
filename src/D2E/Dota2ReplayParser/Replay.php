@@ -124,8 +124,7 @@ class Replay
 
     public function trackPlayersKillDeath()
     {
-        $logger = $this->logger;
-        $players = $this->getPlayers();
+        $replay = $this;
 
         $this->track('\CDOTAUserMsg_ChatEvent', function (\CDOTAUserMsg_ChatEvent $chatEvent, $tick) use($replay) {
             if ($chatEvent->getType() == \DOTA_CHAT_MESSAGE::CHAT_MESSAGE_AEGIS) {
