@@ -1,6 +1,7 @@
 <?php
 namespace D2E\Dota2ReplayParser;
 
+use Monolog\Logger;
 use D2E\Dota2ReplayParser\Entity\Player;
 
 use D2E\Dota2ReplayParser\IO\StringInputStream;
@@ -28,6 +29,7 @@ class Replay
     private $mappingPacket = array();
     private $players = null;
     private $fileInfo = null;
+    private $logger = null;
 
     /**
      * Constructor
@@ -67,6 +69,13 @@ class Replay
         $this->buildMapping();
 
         $this->streamReader->mark("afterHeader");
+        $this->logger = new Logger("Replay");
+        $this->logger->pushHandler(new StreamHandler('php://stdout', Logger::INFO));
+    }
+
+    public function setLogger($logger)
+    {
+        $this->logger = $logger;
     }
 
     /**
@@ -104,6 +113,26 @@ class Replay
         }
 
         return $this->players;
+    }
+
+    public function trackPlayersKillDeath()
+    {
+        $logger = $this->logger;
+        $players = $this->getPlayers();
+
+        $this->track('\CDOTAUserMsg_ChatEvent', function (\CDOTAUserMsg_ChatEvent $chatEvent, $tick) use($logger, $players) {
+            if ($chatEvent->getType() == \DOTA_CHAT_MESSAGE::CHAT_MESSAGE_AEGIS) {
+                $logger->info("Aegis taken ".print_r($chatEvent, true)."\n");
+            }
+        });
+
+        $this->track('\CSVCMsg_GameEvent', function (\CSVCMsg_GameEvent $gameEvent, $tick) use($logger, $players) {
+            $event = $this->getGameEvent($gameEvent, "dota_combatlog");
+
+            if ($event != null && $event['parameters']['type'] == 4) {
+                $logger->info("Kill append ".print_r($event, true)."\n");
+            }
+        });
     }
 
     /**
