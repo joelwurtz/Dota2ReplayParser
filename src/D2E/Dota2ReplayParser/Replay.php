@@ -145,8 +145,8 @@ class Replay
                     $tables[$table->getTableName()] = array();
                 }
 
-                foreach ($table->getItemsList() as $item) {
-                    $tables[$table->getTableName()][$item->getStr()] = $item->getData();
+                foreach ($table->getItemsList() as $id => $item) {
+                    $tables[$table->getTableName()][$id] = array('name' => $item->getStr(), 'data' => $item->getData());
                 }
             }
 
@@ -168,7 +168,7 @@ class Replay
             $event = $replay->getGameEvent($gameEvent, "dota_combatlog");
 
             if ($event != null && $event['parameters']['type'] == 4) {
-                $replay->getLogger()->info("Kill append ".print_r($event, true)."\n");
+                $replay->getLogger()->info("Kill append ".print_r($event['parameters'], true)."\n");
             }
         });
     }
