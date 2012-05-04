@@ -1,6 +1,8 @@
 <?php
 namespace D2E\Dota2ReplayParser;
 
+use Monolog\Handler\StreamHandler;
+
 use Monolog\Logger;
 use D2E\Dota2ReplayParser\Entity\Player;
 
