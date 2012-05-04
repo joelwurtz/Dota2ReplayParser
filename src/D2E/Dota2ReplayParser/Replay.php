@@ -32,6 +32,7 @@ class Replay
     private $players = null;
     private $fileInfo = null;
     private $logger = null;
+    private $tables = array();
 
     /**
      * Constructor
@@ -120,6 +121,34 @@ class Replay
         }
 
         return $this->players;
+    }
+
+    public function setStringTable($tables)
+    {
+        $this->tables = $tables;
+    }
+
+    public function getStringTable()
+    {
+        return $this->tables;
+    }
+
+    public function trackStringTable()
+    {
+        $replay = $this;
+
+        $this->track('CDemoStringTables', function (\CDemoStringTables $stringTable, $tick) use($replay) {
+            $tables = array();
+
+            foreach ($stringTable->getTablesList() as $table) {
+                $tables[$table->getTableName()] = array();
+                foreach ($table->getItemsList() as $item) {
+                    $tables[$table->getTableName()][$item->getStr()] = $item->getData();
+                }
+            }
+
+            $replay->setStringTable($table);
+        });
     }
 
     public function trackPlayersKillDeath()
