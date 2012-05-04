@@ -126,13 +126,13 @@ class Replay
     {
         $replay = $this;
 
-        $this->track('\CDOTAUserMsg_ChatEvent', function (\CDOTAUserMsg_ChatEvent $chatEvent, $tick) use($replay) {
+        $this->track('CDOTAUserMsg_ChatEvent', function (\CDOTAUserMsg_ChatEvent $chatEvent, $tick) use($replay) {
             if ($chatEvent->getType() == \DOTA_CHAT_MESSAGE::CHAT_MESSAGE_AEGIS) {
                 $replay->getLogger()->info("Aegis taken ".print_r($chatEvent, true)."\n");
             }
         });
 
-        $this->track('\CSVCMsg_GameEvent', function (\CSVCMsg_GameEvent $gameEvent, $tick) use($replay) {
+        $this->track('CSVCMsg_GameEvent', function (\CSVCMsg_GameEvent $gameEvent, $tick) use($replay) {
             $event = $replay->getGameEvent($gameEvent, "dota_combatlog");
 
             if ($event != null && $event['parameters']['type'] == 4) {
