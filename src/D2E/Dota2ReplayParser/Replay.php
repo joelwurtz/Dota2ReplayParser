@@ -1,6 +1,8 @@
 <?php
 namespace D2E\Dota2ReplayParser;
 
+use D2E\Dota2ReplayParser\Entity\Player;
+
 use D2E\Dota2ReplayParser\IO\StringInputStream;
 use D2E\Dota2ReplayParser\IO\FileInputStream;
 use D2E\Dota2ReplayParser\IO\LittleEndianStreamReader;
@@ -24,6 +26,8 @@ class Replay
     private $mappingGlobal = array();
     private $mappingMessages = array();
     private $mappingPacket = array();
+    private $players = null;
+    private $fileInfo = null;
 
     /**
      * Constructor
@@ -87,49 +91,70 @@ class Replay
         }
     }
 
+    public function getPlayers()
+    {
+        if ($this->players === null) {
+            foreach ($this->getFileInfo()->getGameInfo()->getDota()->getPlayerInfoList() as $id => $playerInfo) {
+                $player = new Player();
+                $player->setId($id);
+                $player->setName($playerInfo->getPlayerName());
+                $player->setHero($playerInfo->getHeroName());
+                $this->players[$id] = $player;
+            }
+        }
+
+        return $this->players;
+    }
+
     /**
      * Return file info
      *
      * @throws \RuntimeException
+     * @return \CDemoFileInfo File info
      */
     public function getFileInfo()
     {
-        $this->streamReader->reset("afterHeader");
-        $continue = true;
+        if ($this->fileInfo === null) {
+            $this->streamReader->reset("afterHeader");
+            $continue = true;
 
-        while($continue && $this->streamReader->available()) {
-            $cmd = $this->streamReader->readInt32D2();
-            $tick = $this->streamReader->readInt32D2();
-            $compressed = false;
+            while($continue && $this->streamReader->available()) {
+                $cmd = $this->streamReader->readInt32D2();
+                $tick = $this->streamReader->readInt32D2();
+                $compressed = false;
 
-            if ($cmd & \EDemoCommands::DEM_IsCompressed) {
-                $compressed = true;
-                $cmd = $cmd & ~\EDemoCommands::DEM_IsCompressed;
+                if ($cmd & \EDemoCommands::DEM_IsCompressed) {
+                    $compressed = true;
+                    $cmd = $cmd & ~\EDemoCommands::DEM_IsCompressed;
+                }
+
+                if (!isset($this->mappingGlobal[$cmd])) {
+                    throw new \RuntimeException(sprintf("Invalid message type %s", $cmd));
+                }
+
+                $type = $this->mappingGlobal[$cmd];
+
+                $size = $this->streamReader->readInt32D2();
+                $bytes = $this->streamReader->readString($size);
+
+                if ($compressed) {
+                    $bytes = snappy_uncompress($bytes);
+                }
+
+                if ($type == "CDemoSignonPacket") {
+                    $type = "CDemoPacket";
+                }
+
+                if ($type == "CDemoFileInfo") {
+                    $this->fileInfo = $this->codec->decode(new $type, $bytes);
+                    return $this->fileInfo;
+                }
             }
 
-            if (!isset($this->mappingGlobal[$cmd])) {
-                throw new \RuntimeException(sprintf("Invalid message type %s", $cmd));
-            }
-
-            $type = $this->mappingGlobal[$cmd];
-
-            $size = $this->streamReader->readInt32D2();
-            $bytes = $this->streamReader->readString($size);
-
-            if ($compressed) {
-                $bytes = snappy_uncompress($bytes);
-            }
-
-            if ($type == "CDemoSignonPacket") {
-                $type = "CDemoPacket";
-            }
-
-            if ($type == "CDemoFileInfo") {
-                return $this->codec->decode(new $type, $bytes);
-            }
+            $this->fileInfo = false;
         }
 
-        return null;
+        return $this->fileInfo;
     }
 
     /**
