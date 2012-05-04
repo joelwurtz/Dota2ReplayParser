@@ -138,16 +138,19 @@ class Replay
         $replay = $this;
 
         $this->track('CDemoStringTables', function (\CDemoStringTables $stringTable, $tick) use($replay) {
-            $tables = array();
+            $tables = $replay->getStringTable();
 
             foreach ($stringTable->getTablesList() as $table) {
-                $tables[$table->getTableName()] = array();
+                if (!isset($tables[$table->getTableName()])) {
+                    $tables[$table->getTableName()] = array();
+                }
+
                 foreach ($table->getItemsList() as $item) {
                     $tables[$table->getTableName()][$item->getStr()] = $item->getData();
                 }
             }
 
-            $replay->setStringTable($table);
+            $replay->setStringTable($tables);
         });
     }
 
